@@ -459,6 +459,10 @@ static const char * const lookupDeltaMethod[] = {
     "ERROR", "MEASUREMENT"
 };
 
+static const char * const lookupTableHorizonTiltMode[] = {
+    "SAFE", "EXPERT"
+};
+
 typedef struct lookupTableEntry_s {
     const char * const *values;
     const uint8_t valueCount;
@@ -487,6 +491,7 @@ typedef enum {
     TABLE_SUPEREXPO_YAW,
     TABLE_FAST_PWM,
     TABLE_DELTA_METHOD,
+    TABLE_HORIZON_TILT_MODE,
 } lookupTableIndex_e;
 
 static const lookupTableEntry_t lookupTables[] = {
@@ -511,7 +516,8 @@ static const lookupTableEntry_t lookupTables[] = {
     { lookupTableDebug, sizeof(lookupTableDebug) / sizeof(char *) },
     { lookupTableSuperExpoYaw, sizeof(lookupTableSuperExpoYaw) / sizeof(char *) },
     { lookupTableFastPwm, sizeof(lookupTableFastPwm) / sizeof(char *) },
-    { lookupDeltaMethod, sizeof(lookupDeltaMethod) / sizeof(char *) }
+    { lookupDeltaMethod, sizeof(lookupDeltaMethod) / sizeof(char *) },
+    { lookupTableHorizonTiltMode, sizeof(lookupTableHorizonTiltMode) / sizeof(char *) }
 };
 
 #define VALUE_TYPE_OFFSET 0
@@ -693,6 +699,10 @@ const clivalue_t valueTable[] = {
 
     { "yaw_motor_direction",        VAR_INT8   | MASTER_VALUE, &masterConfig.mixerConfig.yaw_motor_direction, .config.minmax = { -1,  1 } },
     { "yaw_p_limit",                VAR_UINT16 | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.yaw_p_limit, .config.minmax = { YAW_P_LIMIT_MIN, YAW_P_LIMIT_MAX } },
+
+    { "horizon_tilt_effect",        VAR_UINT8  | PROFILE_VALUE, &masterConfig.profile[0].pidProfile.horizon_tilt_effect, .config.minmax = { 0,  250 } },
+    { "horizon_tilt_mode",          VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, &masterConfig.profile[0].pidProfile.horizon_tilt_mode, .config.lookup = { TABLE_HORIZON_TILT_MODE } },
+
 #ifdef USE_SERVOS
     { "tri_unarmed_servo",          VAR_INT8   | MASTER_VALUE | MODE_LOOKUP, &masterConfig.mixerConfig.tri_unarmed_servo, .config.lookup = { TABLE_OFF_ON } },
     { "servo_lowpass_freq",         VAR_UINT16 | MASTER_VALUE, &masterConfig.mixerConfig.servo_lowpass_freq, .config.minmax = { 10,  400} },

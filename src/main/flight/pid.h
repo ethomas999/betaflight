@@ -59,6 +59,11 @@ typedef enum {
 
 #define IS_PID_CONTROLLER_FP_BASED(pidController) (pidController == 2)
 
+typedef enum {
+    HORIZON_TILT_MODE_SAFE = 0,
+    HORIZON_TILT_MODE_EXPERT
+} horizonTiltMode_e;
+
 typedef struct pidProfile_s {
     uint8_t pidController;                  // 1 = rewrite from http://www.multiwii.com/forum/viewtopic.php?f=8&t=3671, 2 = Luggi09s new baseflight pid
 
@@ -74,6 +79,9 @@ typedef struct pidProfile_s {
     uint16_t yaw_p_limit;
     uint8_t dterm_average_count;            // Configurable delta count for dterm
     uint8_t dynamic_pid;                    // Dynamic PID implementation (currently only P and I)
+
+    uint8_t horizon_tilt_effect;            // inclination factor for Horizon mode
+    uint8_t horizon_tilt_mode;              // SAFE or EXPERT
 
 #ifdef GTUNE
     uint8_t  gtune_lolimP[3];               // [0..200] Lower limit of P during G tune
