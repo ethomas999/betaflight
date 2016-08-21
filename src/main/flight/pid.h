@@ -68,6 +68,11 @@ typedef enum {
     PID_STABILISATION_ON
 } pidStabilisationState_e;
 
+typedef enum {
+    HORIZON_TILT_MODE_SAFE = 0,
+    HORIZON_TILT_MODE_EXPERT
+} horizonTiltMode_e;
+
 typedef struct pidProfile_s {
     uint8_t pidController;                  // 1 = rewrite betaflight evolved from http://www.multiwii.com/forum/viewtopic.php?f=8&t=3671, 2 = Betaflight PIDc (Evolved Luxfloat)
 
@@ -94,6 +99,9 @@ typedef struct pidProfile_s {
     uint8_t dtermSetpointWeight;            // Setpoint weight for Dterm (0= measurement, 1= full error, 1 > agressive derivative)
     uint16_t yawRateAccelLimit;             // yaw accel limiter for deg/sec/ms
     uint16_t rateAccelLimit;                // accel limiter roll/pitch deg/sec/ms
+
+    uint8_t horizon_tilt_effect;            // inclination factor for Horizon mode
+    uint8_t horizon_tilt_mode;              // SAFE or EXPERT
 
 #ifdef GTUNE
     uint8_t  gtune_lolimP[3];               // [0..200] Lower limit of P during G tune
