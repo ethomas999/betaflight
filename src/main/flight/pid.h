@@ -57,6 +57,11 @@ typedef enum {
     PID_STABILISATION_ON
 } pidStabilisationState_e;
 
+typedef enum {
+    HORIZON_TILT_MODE_SAFE = 0,
+    HORIZON_TILT_MODE_EXPERT
+} horizonTiltMode_e;
+
 typedef struct pidProfile_s {
     uint8_t P8[PID_ITEM_COUNT];
     uint8_t I8[PID_ITEM_COUNT];
@@ -75,6 +80,9 @@ typedef struct pidProfile_s {
     uint8_t pidAtMinThrottle;               // Disable/Enable pids on zero throttle. Normally even without airmode P and D would be active.
     uint8_t levelAngleLimit;                // Max angle in degrees in level mode
     uint8_t levelSensitivity;               // Angle mode sensitivity reflected in degrees assuming user using full stick
+
+    uint8_t horizon_tilt_effect;            // inclination factor for Horizon mode
+    uint8_t horizon_tilt_mode;              // SAFE or EXPERT
 
     // Betaflight PID controller parameters
     uint16_t itermThrottleThreshold;        // max allowed throttle delta before iterm accelerated in ms

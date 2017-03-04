@@ -359,6 +359,10 @@ static const char * const lookupTableFailsafe[] = {
     "AUTO-LAND", "DROP"
 };
 
+static const char * const lookupTableHorizonTiltMode[] = {
+    "SAFE", "EXPERT"
+};
+
 typedef struct lookupTableEntry_s {
     const char * const *values;
     const uint8_t valueCount;
@@ -404,6 +408,7 @@ typedef enum {
 #ifdef OSD
     TABLE_OSD,
 #endif
+    TABLE_HORIZON_TILT_MODE,
     LOOKUP_TABLE_COUNT
 } lookupTableIndex_e;
 
@@ -447,6 +452,7 @@ static const lookupTableEntry_t lookupTables[] = {
 #ifdef OSD
     { lookupTableOsdType, sizeof(lookupTableOsdType) / sizeof(char *) },
 #endif
+    { lookupTableHorizonTiltMode, sizeof(lookupTableHorizonTiltMode) / sizeof(char *) },
 };
 
 #define VALUE_TYPE_OFFSET 0
@@ -771,6 +777,9 @@ static const clivalue_t valueTable[] = {
 
     { "level_sensitivity",          VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 10, 200 }, PG_PID_PROFILE, offsetof(pidProfile_t, levelSensitivity) },
     { "level_limit",                VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 10, 120 }, PG_PID_PROFILE, offsetof(pidProfile_t, levelAngleLimit) },
+
+    { "horizon_tilt_effect",        VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 0,  250 }, PG_PID_PROFILE, offsetof(pidProfile_t, horizon_tilt_effect) },
+    { "horizon_tilt_mode",          VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_HORIZON_TILT_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, horizon_tilt_mode) },
 #ifdef GPS
     { "gps_pos_p",                  VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 0, 200 }, PG_PID_PROFILE, offsetof(pidProfile_t, P8[PIDPOS]) },
     { "gps_pos_i",                  VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 0, 200 }, PG_PID_PROFILE, offsetof(pidProfile_t, I8[PIDPOS]) },
