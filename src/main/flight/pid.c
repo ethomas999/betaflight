@@ -166,21 +166,77 @@ void pidInitConfig(const pidProfile_t *pidProfile) {
     relaxFactor = 1.0f / (pidProfile->setpointRelaxRatio / 100.0f);
     levelGain = pidProfile->P8[PIDLEVEL] / 10.0f;
     horizonGain = pidProfile->I8[PIDLEVEL] / 10.0f;
-    horizonTransition = 100.0f / pidProfile->D8[PIDLEVEL];
+    horizonTransition = (float)pidProfile->D8[PIDLEVEL];
     maxVelocity[FD_ROLL] = maxVelocity[FD_PITCH] = pidProfile->rateAccelLimit * 1000 * dT;
     maxVelocity[FD_YAW] = pidProfile->yawRateAccelLimit * 1000 * dT;
     ITermWindupPoint = (float)pidProfile->itermWindupPointPercent / 100.0f;
     ITermWindupPointInv = 1.0f / (1.0f - ITermWindupPoint);
 }
 
-static float calcHorizonLevelStrength(void) {
-    float horizonLevelStrength = 0.0f;
-    if (horizonTransition > 0.0f) {
-        const float mostDeflectedPos = MAX(getRcDeflectionAbs(FD_ROLL), getRcDeflectionAbs(FD_PITCH));
-        // Progressively turn off the horizon self level strength as the stick is banged over
-        horizonLevelStrength = constrainf(1 - mostDeflectedPos * horizonTransition, 0, 1);
+// calculates strength of horizon leveling; 0 = none, 1.0 = most leveling
+static float calcHorizonLevelStrength(const pidProfile_t *pidProfile) {
+    // start with 1.0 at center stick, 0.0 at max stick deflection:
+    float horizonLevelStrength = 1.0f -
+             MAX(getRcDeflectionAbs(FD_ROLL), getRcDeflectionAbs(FD_PITCH));
+
+    // 0 at level, 90 at vertical, 180 at inverted (degrees):
+    const float currentInclination = MAX(ABS(attitude.values.roll),
+                                        ABS(attitude.values.pitch)) / 10.0f;
+
+    // horizonTiltMode:  SAFE = leveling always active when sticks centered,
+    //                   EXPERT = leveling can be totally off when inverted
+    if (pidProfile->horizon_tilt_mode == HORIZON_TILT_MODE_EXPERT) {
+        if (pidProfile->horizon_tilt_effect < 175) {
+            // horizonTiltEffect 0 to 125 => 270 to 90
+            //  (represents where leveling goes to zero):
+            const float cutoffDegrees = (175-pidProfile->horizon_tilt_effect) * 1.8f;
+            // inclinationLevelRatio (0.0 to 1.0) is smaller (less leveling)
+            //  for larger inclinations; 0.0 at cutoffDegrees value:
+            const float inclinationLevelRatio = constrainf(
+                       (cutoffDegrees-currentInclination) / cutoffDegrees, 0, 1);
+            // apply configured horizon sensitivity:
+            if (horizonTransition <= 0) {        // zero means no leveling
+                horizonLevelStrength = 0;
+            } else {
+                // when stick is near center (horizonLevelStrength ~= 1.0)
+                //  H_sensitivity value has little effect,
+                // when stick is deflected (horizonLevelStrength near 0.0)
+                //  H_sensitivity value has more effect:
+                horizonLevelStrength = (horizonLevelStrength - 1) *
+                        100 / horizonTransition + 1;
+            }
+            // apply inclination ratio, which may lower leveling
+            //  to zero regardless of stick position:
+            horizonLevelStrength *= inclinationLevelRatio;
+        }
+        else
+          horizonLevelStrength = 0;
+    } else {  // horizon_tilt_mode = SAFE (leveling always active when sticks centered)
+        float sensitFact;
+        if (pidProfile->horizon_tilt_effect > 0) {
+            // 0 to 100 => 1.0 to 0.0 (larger means more leveling):
+            const float factorRatio = (float)(100 - pidProfile->horizon_tilt_effect) / 100;
+            // inclinationLevelRatio (0.0 to 1.0) is smaller (less leveling)
+            //  for larger inclinations, goes to 1.0 at inclination==level:
+            const float inclinationLevelRatio = (180-currentInclination)/180 *
+                                           (1.0f-factorRatio) + factorRatio;
+            // apply ratio to configured horizon sensitivity:
+            sensitFact = horizonTransition * inclinationLevelRatio;
+        }
+        else   // horizonTiltEffect=0 for "old" functionality
+            sensitFact = horizonTransition;
+
+        if (sensitFact <= 0) {           // zero means no leveling
+            horizonLevelStrength = 0;
+        } else {
+            // when stick is near center (horizonLevelStrength ~= 1.0)
+            //  sensitFact value has little effect,
+            // when stick is deflected (horizonLevelStrength near 0.0)
+            //  sensitFact value has more effect:
+            horizonLevelStrength = ((horizonLevelStrength - 1) * (100 / sensitFact)) + 1;
+        }
     }
-    return horizonLevelStrength;
+    return constrainf(horizonLevelStrength, 0, 1);
 }
 
 static float pidLevel(int axis, const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim, float currentPidSetpoint) {
@@ -197,7 +253,7 @@ static float pidLevel(int axis, const pidProfile_t *pidProfile, const rollAndPit
     } else {
         // HORIZON mode - direct sticks control is applied to rate PID
         // mix up angle error to desired AngleRate to add a little auto-level feel
-        const float horizonLevelStrength = calcHorizonLevelStrength();
+        const float horizonLevelStrength = calcHorizonLevelStrength(pidProfile);
         currentPidSetpoint = currentPidSetpoint + (errorAngle * horizonGain * horizonLevelStrength);
     }
     return currentPidSetpoint;

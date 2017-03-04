@@ -156,7 +156,7 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->D8[PIDNAVR] = 83;  // NAV_D * 1000;
     pidProfile->P8[PIDLEVEL] = 50;
     pidProfile->I8[PIDLEVEL] = 50;
-    pidProfile->D8[PIDLEVEL] = 100;
+    pidProfile->D8[PIDLEVEL] = 75;
     pidProfile->P8[PIDMAG] = 40;
     pidProfile->P8[PIDVEL] = 55;
     pidProfile->I8[PIDVEL] = 55;
@@ -180,6 +180,8 @@ static void resetPidProfile(pidProfile_t *pidProfile)
     pidProfile->rateAccelLimit = 0.0f;
     pidProfile->itermThrottleThreshold = 350;
     pidProfile->itermAcceleratorGain = 1.0f;
+    pidProfile->horizon_tilt_effect = 75;
+    pidProfile->horizon_tilt_mode = HORIZON_TILT_MODE_SAFE;
 }
 
 void resetProfile(profile_t *profile)
