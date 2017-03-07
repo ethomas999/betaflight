@@ -186,36 +186,32 @@ static float calcHorizonLevelStrength(const pidProfile_t *pidProfile) {
     // horizonTiltMode:  SAFE = leveling always active when sticks centered,
     //                   EXPERT = leveling can be totally off when inverted
     if (pidProfile->horizon_tilt_mode == HORIZON_TILT_MODE_EXPERT) {
-        if (pidProfile->horizon_tilt_effect < 175) {
-            // horizonTiltEffect 0 to 125 => 270 to 90
-            //  (represents where leveling goes to zero):
-            const float cutoffDegrees = (175-pidProfile->horizon_tilt_effect) * 1.8f;
+        if (horizonTransition > 0 && pidProfile->horizon_tilt_effect < 175) {
+            // d_level > 0, and horizonTiltEffect is in range
+            //   0 to 125 => 270 to 90 (represents where leveling goes to zero):
+            const float cutoffDegrees = (175 - pidProfile->horizon_tilt_effect) * 1.8f;
             // inclinationLevelRatio (0.0 to 1.0) is smaller (less leveling)
             //  for larger inclinations; 0.0 at cutoffDegrees value:
             const float inclinationLevelRatio = constrainf(
                        (cutoffDegrees-currentInclination) / cutoffDegrees, 0, 1);
             // apply configured horizon sensitivity:
-            if (horizonTransition <= 0) {        // zero means no leveling
-                horizonLevelStrength = 0;
-            } else {
                 // when stick is near center (horizonLevelStrength ~= 1.0)
                 //  H_sensitivity value has little effect,
                 // when stick is deflected (horizonLevelStrength near 0.0)
                 //  H_sensitivity value has more effect:
-                horizonLevelStrength = (horizonLevelStrength - 1) *
-                        100 / horizonTransition + 1;
-            }
+            horizonLevelStrength = (horizonLevelStrength - 1) *
+                    100 / horizonTransition + 1;
             // apply inclination ratio, which may lower leveling
             //  to zero regardless of stick position:
             horizonLevelStrength *= inclinationLevelRatio;
         }
-        else
+        else  // d_level=0 or horizon_tilt_effect>=175 means no leveling
           horizonLevelStrength = 0;
     } else {  // horizon_tilt_mode = SAFE (leveling always active when sticks centered)
         float sensitFact;
         if (pidProfile->horizon_tilt_effect > 0) {
             // 0 to 100 => 1.0 to 0.0 (larger means more leveling):
-            const float factorRatio = (float)(100 - pidProfile->horizon_tilt_effect) / 100;
+            const float factorRatio = (100 - pidProfile->horizon_tilt_effect) * 0.01f;
             // inclinationLevelRatio (0.0 to 1.0) is smaller (less leveling)
             //  for larger inclinations, goes to 1.0 at inclination==level:
             const float inclinationLevelRatio = (180-currentInclination)/180 *
