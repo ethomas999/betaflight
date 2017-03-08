@@ -154,7 +154,9 @@ void pidInitFilters(const pidProfile_t *pidProfile)
 static float Kp[3], Ki[3], Kd[3], maxVelocity[3];
 static float relaxFactor;
 static float dtermSetpointWeight;
-static float levelGain, horizonGain, horizonTransition, ITermWindupPoint, ITermWindupPointInv;
+static float levelGain, horizonGain, horizonTransition, horizonCutoffDegrees,
+             horizonFactorRatio, ITermWindupPoint, ITermWindupPointInv;
+static uint8_t horizonTiltMode;
 
 void pidInitConfig(const pidProfile_t *pidProfile) {
     for(int axis = FD_ROLL; axis <= FD_YAW; axis++) {
@@ -167,6 +169,9 @@ void pidInitConfig(const pidProfile_t *pidProfile) {
     levelGain = pidProfile->P8[PIDLEVEL] / 10.0f;
     horizonGain = pidProfile->I8[PIDLEVEL] / 10.0f;
     horizonTransition = (float)pidProfile->D8[PIDLEVEL];
+    horizonTiltMode = pidProfile->horizon_tilt_mode;
+    horizonCutoffDegrees = (175 - pidProfile->horizon_tilt_effect) * 1.8f;
+    horizonFactorRatio = (100 - pidProfile->horizon_tilt_effect) * 0.01f;
     maxVelocity[FD_ROLL] = maxVelocity[FD_PITCH] = pidProfile->rateAccelLimit * 1000 * dT;
     maxVelocity[FD_YAW] = pidProfile->yawRateAccelLimit * 1000 * dT;
     ITermWindupPoint = (float)pidProfile->itermWindupPointPercent / 100.0f;
@@ -174,7 +179,7 @@ void pidInitConfig(const pidProfile_t *pidProfile) {
 }
 
 // calculates strength of horizon leveling; 0 = none, 1.0 = most leveling
-static float calcHorizonLevelStrength(const pidProfile_t *pidProfile) {
+static float calcHorizonLevelStrength() {
     // start with 1.0 at center stick, 0.0 at max stick deflection:
     float horizonLevelStrength = 1.0f -
              MAX(getRcDeflectionAbs(FD_ROLL), getRcDeflectionAbs(FD_PITCH));
@@ -185,15 +190,14 @@ static float calcHorizonLevelStrength(const pidProfile_t *pidProfile) {
 
     // horizonTiltMode:  SAFE = leveling always active when sticks centered,
     //                   EXPERT = leveling can be totally off when inverted
-    if (pidProfile->horizon_tilt_mode == HORIZON_TILT_MODE_EXPERT) {
-        if (horizonTransition > 0 && pidProfile->horizon_tilt_effect < 175) {
-            // d_level > 0, and horizonTiltEffect is in range
-            //   0 to 125 => 270 to 90 (represents where leveling goes to zero):
-            const float cutoffDegrees = (175 - pidProfile->horizon_tilt_effect) * 1.8f;
+    if (horizonTiltMode == HORIZON_TILT_MODE_EXPERT) {
+        if (horizonTransition > 0 && horizonCutoffDegrees > 0) {
+                    // if d_level > 0 and horizonTiltEffect < 175
+            // horizonCutoffDegrees: 0 to 125 => 270 to 90 (represents where leveling goes to zero)
             // inclinationLevelRatio (0.0 to 1.0) is smaller (less leveling)
-            //  for larger inclinations; 0.0 at cutoffDegrees value:
+            //  for larger inclinations; 0.0 at horizonCutoffDegrees value:
             const float inclinationLevelRatio = constrainf(
-                       (cutoffDegrees-currentInclination) / cutoffDegrees, 0, 1);
+                    (horizonCutoffDegrees-currentInclination) / horizonCutoffDegrees, 0, 1);
             // apply configured horizon sensitivity:
                 // when stick is near center (horizonLevelStrength ~= 1.0)
                 //  H_sensitivity value has little effect,
@@ -209,13 +213,12 @@ static float calcHorizonLevelStrength(const pidProfile_t *pidProfile) {
           horizonLevelStrength = 0;
     } else {  // horizon_tilt_mode = SAFE (leveling always active when sticks centered)
         float sensitFact;
-        if (pidProfile->horizon_tilt_effect > 0) {
-            // 0 to 100 => 1.0 to 0.0 (larger means more leveling):
-            const float factorRatio = (100 - pidProfile->horizon_tilt_effect) * 0.01f;
+        if (horizonFactorRatio < 1.01f) {   // if horizonTiltEffect > 0
+            // horizonFactorRatio: 1.0 to 0.0 (larger means more leveling)
             // inclinationLevelRatio (0.0 to 1.0) is smaller (less leveling)
             //  for larger inclinations, goes to 1.0 at inclination==level:
             const float inclinationLevelRatio = (180-currentInclination)/180 *
-                                           (1.0f-factorRatio) + factorRatio;
+                               (1.0f-horizonFactorRatio) + horizonFactorRatio;
             // apply ratio to configured horizon sensitivity:
             sensitFact = horizonTransition * inclinationLevelRatio;
         }
