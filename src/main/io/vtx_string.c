@@ -58,7 +58,7 @@ bool vtx58_Freq2Bandchan(uint16_t freq, uint8_t *pBand, uint8_t *pChannel)
 {
     // Use reverse lookup order so that 5880Mhz
     // get Raceband 7 instead of Fatshark 8.
-    for (int band = VTX_STRING_BAND_COUNT-1 ; band >= 0 ; band--) {
+    for (int band = VTX_STRING_BAND_COUNT - 1 ; band >= 0 ; band--) {
         for (int channel = 0 ; channel < VTX_STRING_CHAN_COUNT ; channel++) {
             if (vtx58frequencyTable[band][channel] == freq) {
                 *pBand = band + 1;

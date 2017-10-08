@@ -49,8 +49,8 @@ void vtxSettingsSaveBandAndChannel(uint8_t band, uint8_t channel)
     }
     if (band != 0) {    //enter freq value to band/channel
         uint16_t freq;
-        if ((freq=vtx58_Bandchan2Freq(band, channel)) != 0 &&
-                                 freq != vtxSettingsConfigMutable()->freq) {
+        if ((freq = vtx58_Bandchan2Freq(band, channel)) != 0 &&
+                        freq != vtxSettingsConfigMutable()->freq) {
             vtxSettingsConfigMutable()->freq = freq;
             modFlag = true;
         }

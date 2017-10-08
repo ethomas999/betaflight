@@ -104,8 +104,9 @@ void saCmsUpdate(void)
         }
 
         // if user-freq mode then track possible change
-        if (saCmsFselMode != 0 && saDevice.freq != 0)
+        if (saCmsFselMode != 0 && saDevice.freq != 0) {
             saCmsUserFreq = saDevice.freq;
+        }
 
         saCmsFselModeNew = saCmsFselMode;   //init mode for menu
     }
@@ -399,8 +400,9 @@ static long saCmsConfigFreqModeByGvar(displayPort_t *pDisp, const void *self)
 
     // if trying to do user frequency mode in RACE opmodel then
     // revert because user-freq only available in FREE opmodel
-    if (saCmsFselModeNew != 0 && saCmsOpmodel != SACMS_OPMODEL_FREE)
+    if (saCmsFselModeNew != 0 && saCmsOpmodel != SACMS_OPMODEL_FREE) {
         saCmsFselModeNew = 0;
+    }
 
     // don't call 'saSetBandAndChannel()' / 'saSetFreq()' here,
     // wait until SET / 'saCmsCommence()' is activated
@@ -430,9 +432,9 @@ static long saCmsCommence(displayPort_t *pDisp, const void *self)
     } else {
         // Freestyle model
         // Setup band and freq / user freq
-        if (saCmsFselModeNew == 0)
+        if (saCmsFselModeNew == 0) {
             saSetBandAndChannel(saCmsBand - 1, saCmsChan - 1);
-        else {
+        } else {
             saSetMode(0);    //make sure FREE mode is setup
             saSetFreq(saCmsUserFreq);
         }

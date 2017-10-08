@@ -59,7 +59,7 @@ static void cmsx_Vtx_ConfigRead(void)
 
 static void cmsx_Vtx_ConfigWriteback(void)
 {
-    vtxSettingsSaveBandChanAndPower(cmsx_vtxBand+1, cmsx_vtxChannel, cmsx_vtxPower);
+    vtxSettingsSaveBandChanAndPower(cmsx_vtxBand + 1, cmsx_vtxChannel, cmsx_vtxPower);
 }
 
 static long cmsx_Vtx_onEnter(void)
