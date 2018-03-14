@@ -446,6 +446,9 @@ static void saSendFrame(uint8_t *buf, int len)
     for (int i = 0 ; i < len ; i++) {
         serialWrite(smartAudioSerialPort, buf[i]);
     }
+    
+    // do workaround to support AKK and Mach 2 VTXs
+    serialWrite(smartAudioSerialPort, 0x00);
 
     sa_lastTransmissionMs = millis();
     saStat.pktsent++;
